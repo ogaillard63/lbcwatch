@@ -1,4 +1,4 @@
-# LBC Watch 2
+# LBC Watch
 
 Système de remontée d'annonces immobilières Leboncoin, inspiré de `lbc-finder`.
 
