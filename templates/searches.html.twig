@@ -1,0 +1,76 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Mes Flux de Veille{% endblock %}
+
+{% block content %}
+<div class="glass-card rounded-3xl overflow-hidden">
+    <table class="w-full text-left">
+        <thead class="bg-slate-800/50 border-b border-slate-700">
+            <tr>
+                <th class="p-6 font-bold text-slate-400">Nom / Recherche</th>
+                <th class="p-6 font-bold text-slate-400">Localisation</th>
+                <th class="p-6 font-bold text-slate-400">Prix & Critères</th>
+                <th class="p-6 font-bold text-slate-400">Statut / Dernier check</th>
+                <th class="p-6 font-bold text-slate-400">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800">
+            {% for search in searches %}
+            <tr class="hover:bg-slate-800/30 transition-all">
+                <td class="p-6">
+                    <div class="font-bold text-lg">{{ search.name }}</div>
+                    <div class="text-slate-500 text-sm">
+                        Cat : {{ flatCategories[search.category] ?? search.category }}
+                    </div>
+                </td>
+                <td class="p-6">
+                    <div class="flex flex-wrap gap-2">
+                        {% for zip in search.zipcodes|split(',') %}
+                        <span class="bg-indigo-900/40 text-indigo-300 px-2 py-1 rounded text-xs font-bold">{{ zip|trim }}</span>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td class="p-6">
+                    <div class="text-sm">
+                        <span class="text-slate-400">Prix :</span> {{ search.price_min ?: 0 }} - {{ search.price_max ?: '∞' }} €
+                    </div>
+                    {% if search.keywords %}
+                    <div class="text-sm mt-1">
+                        <span class="text-slate-400">Mots-clés :</span> {{ search.keywords }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="p-6">
+                    <div class="flex items-center space-x-2">
+                        <span class="h-2 w-2 rounded-full {{ search.is_active ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                        <span>{{ search.is_active ? 'Actif' : 'Inactif' }}</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">
+                        Check : {{ search.last_checked ? search.last_checked|date('d/m/Y H:i') : 'Jamais' }}
+                    </div>
+                </td>
+                <td class="p-6">
+                    <div class="flex space-x-3">
+                        <a href="{{ search.leboncoin_url }}" target="_blank" class="text-green-400 hover:bg-green-500/10 p-2 rounded-lg transition-all" title="Tester sur Leboncoin">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                        <button onclick='openModal({{ search|json_encode|raw }})' class="text-indigo-400 hover:bg-indigo-500/10 p-2 rounded-lg transition-all" title="Modifier">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <a href="index.php?action=delete_search&id={{ search.id }}" class="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-all" onclick="return confirm('Supprimer ce flux ?')" title="Supprimer">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="p-20 text-center text-slate-500">
+                    Aucun flux de recherche configuré.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

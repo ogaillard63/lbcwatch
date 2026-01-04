@@ -1,0 +1,20 @@
+{
+    "name": "ogail/lbcwatch2",
+    "description": "LBC Watch 2 Dashboard",
+    "type": "project",
+    "require": {
+        "twig/twig": "^3.0",
+        "vlucas/phpdotenv": "^5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Antigravity",
+            "email": "antigravity@google.com"
+        }
+    ]
+}

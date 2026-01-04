@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LBC Watch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-link.active {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            color: white;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sidebar-overlay {
+            display: none;
+        }
+
+        /* Mobile Sidebar Overrides */
+        @media (max-width: 768px) {
+            aside.mobile-hidden {
+                transform: translateX(-100%);
+                visibility: hidden;
+            }
+            aside {
+                position: fixed !important;
+                z-index: 100;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                visibility: visible;
+                transform: translateX(0);
+            }
+            .sidebar-overlay {
+                display: none;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex">
+    <!-- Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 glass-card border-r border-slate-800 mobile-hidden md:flex flex-col sticky top-0 h-screen">
+        <div class="p-6 flex justify-between items-center">
+            <h1 class="text-2xl font-bold gradient-text">LBC Watch</h1>
+            <button class="md:hidden text-slate-400" onclick="toggleSidebar()">
+                <i class="bi bi-x-lg text-xl"></i>
+            </button>
+        </div>
+        
+        <nav class="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
+            <a href="index.php?action=dashboard" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl transition-all {{ page == 'dashboard' ? 'active' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                <i class="bi bi-grid-fill"></i>
+                <span>Annonces</span>
+            </a>
+            <a href="index.php?action=searches" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl transition-all {{ page == 'searches' ? 'active' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                <i class="bi bi-search"></i>
+                <span>Mes Recherches</span>
+            </a>
+            <a href="index.php?action=archives" class="sidebar-link flex items-center space-x-3 p-3 rounded-xl transition-all {{ page == 'archives' ? 'active' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                <i class="bi bi-archive-fill"></i>
+                <span>Archives</span>
+            </a>
+        </nav>
+
+        <div class="p-4 mt-auto">
+            {% if logs is defined and logs|length > 0 %}
+            <div class="mt-4 bg-slate-900/50 rounded-2xl p-4 border border-slate-800">
+                <p class="text-[10px] text-slate-500 uppercase font-bold mb-2 tracking-wider">Logs récents</p>
+                <div class="flex flex-col space-y-1 max-h-[120px] overflow-y-auto pr-1">
+                    {% for log in logs %}
+                    <div class="text-[10px] flex items-center space-x-2 border-l-2 {% if log.level == 'ERROR' %}border-red-500{% elseif log.level == 'SUCCESS' %}border-green-500{% else %}border-slate-600{% endif %} pl-2 hover:bg-white/5 rounded-r transition-colors">
+                        <span class="text-slate-500 font-mono shrink-0">{{ log.created_at|date('H:i') }}</span>
+                        <span class="{% if log.level == 'ERROR' %}text-red-400{% elseif log.level == 'SUCCESS' %}text-green-400{% else %}text-slate-300{% endif %} truncate" title="{{ log.message }}">{{ log.message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="mt-4 pt-4 border-t border-slate-800">
+                <a href="index.php?action=logout" class="flex items-center space-x-3 p-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Déconnexion</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 w-full overflow-y-auto">
+        <header class="sticky top-0 z-40 bg-[#0f172a]/80 backdrop-blur-md border-b border-slate-800 p-4 md:p-6 mb-2 md:mb-4">
+            <div class="flex justify-between items-center max-w-7xl mx-auto">
+                <div class="flex items-center space-x-4">
+                    <button class="md:hidden text-slate-400 hover:text-white p-2" onclick="toggleSidebar()">
+                        <i class="bi bi-list text-2xl"></i>
+                    </button>
+                    <h2 class="text-lg md:text-2xl font-bold truncate">{% block title %}{% endblock %}</h2>
+                </div>
+                <div class="flex items-center space-x-2 md:space-x-4">
+                    <button id="refreshBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2 md:px-4 md:py-2 rounded-xl transition-all flex items-center space-x-2" onclick="triggerManualScan()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        <span class="hidden md:inline">Actualiser</span>
+                    </button>
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl transition-all flex items-center space-x-2" onclick="openModal()">
+                        <i class="bi bi-plus-lg"></i>
+                        <span class="hidden md:inline">Nouvelle Recherche</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-4 md:p-6 max-w-7xl mx-auto">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Modal for new search -->
+    <div id="searchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-card w-full max-w-lg p-8 rounded-3xl animate__animated animate__zoomIn">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Nouvelle Recherche</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+            
+            <form action="index.php?action=add_search" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Nom du flux</label>
+                    <input type="text" name="name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="ex: Maison Nantes">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Catégorie</label>
+                    <div class="relative">
+                        <select name="category" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white appearance-none">
+                            {% for group, subcats in categories %}
+                            <optgroup label="{{ group }}" class="bg-slate-800 text-indigo-400">
+                                {% for id, name in subcats %}
+                                <option value="{{ id }}">{{ name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                        <i class="bi bi-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"></i>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Prix Min</label>
+                        <input type="number" name="price_min" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="0 €">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Prix Max</label>
+                        <input type="number" name="price_max" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="500 000 €">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Codes Postaux (séparés par virgule)</label>
+                    <input type="text" name="zipcodes" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="44000, 44100">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Mots-clés</label>
+                    <input type="text" name="keywords" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="jardin, garage">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Catégories à exclure (IDs séparés par virgule, Animaux = 36)</label>
+                    <input type="text" name="excluded_categories" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-white" placeholder="ex: 36, 15">
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="is_donation" id="is_donation" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <label for="is_donation" class="text-sm text-slate-400">Uniquement les dons (&donation=1)</label>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
+                        Créer le flux de veille
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('mobile-hidden');
+            overlay.classList.toggle('active');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        function openModal(searchData = null) {
+            const modal = document.getElementById('searchModal');
+            const title = modal.querySelector('h3');
+            const form = modal.querySelector('form');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (searchData) {
+                title.innerText = 'Modifier la Recherche';
+                form.action = 'index.php?action=edit_search';
+                submitBtn.innerText = 'Enregistrer les modifications';
+                
+                // Add or update hidden ID field
+                let idInput = form.querySelector('input[name="id"]');
+                if (!idInput) {
+                    idInput = document.createElement('input');
+                    idInput.type = 'hidden';
+                    idInput.name = 'id';
+                    form.appendChild(idInput);
+                }
+                idInput.value = searchData.id;
+                
+                // Fill fields
+                form.querySelector('input[name="name"]').value = searchData.name;
+                form.querySelector('select[name="category"]').value = searchData.category || '9';
+                form.querySelector('input[name="price_min"]').value = searchData.price_min || '';
+                form.querySelector('input[name="price_max"]').value = searchData.price_max || '';
+                form.querySelector('input[name="zipcodes"]').value = searchData.zipcodes || '';
+                form.querySelector('input[name="keywords"]').value = searchData.keywords || '';
+                form.querySelector('input[name="excluded_categories"]').value = searchData.excluded_categories || '';
+                form.querySelector('input[name="is_donation"]').checked = searchData.is_donation == 1;
+            } else {
+                title.innerText = 'Nouvelle Recherche';
+                form.action = 'index.php?action=add_search';
+                submitBtn.innerText = 'Créer le flux de veille';
+                form.reset();
+                if (form.querySelector('input[name="id"]')) {
+                    form.querySelector('input[name="id"]').remove();
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('searchModal').classList.add('hidden');
+        }
+        
+        async function toggleFavorite(adId, btn) {
+            try {
+                const res = await fetch(`index.php?action=toggle_favorite&id=${adId}`);
+                if (res.ok) {
+                    const icon = btn.querySelector('i');
+                    if (icon.classList.contains('bi-star')) {
+                        icon.classList.remove('bi-star');
+                        icon.classList.add('bi-star-fill');
+                        btn.classList.remove('text-white', 'opacity-0', 'group-hover:opacity-60', 'hover:!opacity-100');
+                        btn.classList.add('text-yellow-400', 'opacity-100');
+                    } else {
+                        icon.classList.remove('bi-star-fill');
+                        icon.classList.add('bi-star');
+                        btn.classList.remove('text-yellow-400', 'opacity-100');
+                        btn.classList.add('text-white', 'opacity-0', 'group-hover:opacity-60', 'hover:!opacity-100');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function markAsSeen(adId, btn) {
+            const card = btn.closest('.ad-card');
+            
+            // Initial flash/feedback
+            card.style.transition = 'all 0.4s ease-out';
+            card.style.transform = 'scale(0.9)';
+            card.style.opacity = '0';
+            
+            try {
+                const res = await fetch(`index.php?action=mark_seen&id=${adId}`);
+                if (res.ok) {
+                    // Wait for animation to finish before removing from DOM
+                    setTimeout(() => {
+                        card.remove();
+                        // Optional: check if grid is empty to show empty state
+                        const grid = document.querySelector('.grid');
+                        if (grid && grid.children.length === 0) {
+                            location.reload(); // Reload to show the empty state message
+                        }
+                    }, 400);
+                } else {
+                    // Reset if error
+                    card.style.transform = '';
+                    card.style.opacity = '';
+                }
+            } catch (err) {
+                console.error(err);
+                card.style.transform = '';
+                card.style.opacity = '';
+            }
+        }
+        
+        // Auto-reload when new ads are detected
+        const currentSearchId = new URLSearchParams(window.location.search).get('search_id');
+        const storageKey = `lastCheckTime_${currentSearchId || 'all'}`;
+        
+        // Récupérer le dernier timestamp depuis localStorage, ou utiliser l'heure actuelle
+        let lastCheckTime = localStorage.getItem(storageKey);
+        if (!lastCheckTime) {
+            lastCheckTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            localStorage.setItem(storageKey, lastCheckTime);
+        }
+
+        // Track last scan time to reload on status update
+        let lastScanTime = "{{ scannerStatus.last }}";
+        
+        async function checkForNewAds() {
+            try {
+                const params = new URLSearchParams({
+                    action: 'check_new_ads',
+                    last_check: lastCheckTime
+                });
+                
+                if (currentSearchId) {
+                    params.append('search_id', currentSearchId);
+                }
+                
+                const res = await fetch(`index.php?${params.toString()}`);
+                const data = await res.json();
+                
+                // Check if scan status changed
+                const serverLastScan = data.scanner_status.last;
+                if (serverLastScan && serverLastScan !== lastScanTime) {
+                    console.log(`Scan status changed: ${lastScanTime} -> ${serverLastScan}, reloading...`);
+                    shouldReload = true;
+                }
+
+                if (data.new_ads_count > 0) {
+                    // Mettre à jour le timestamp AVANT de recharger
+                    localStorage.setItem(storageKey, data.current_time);
+                    
+                    // Show notification
+                    showNewAdsNotification(data.new_ads_count);
+                    
+                    shouldReload = true;
+                } else {
+                    // Update last check time in memory and storage
+                    lastCheckTime = data.current_time;
+                    localStorage.setItem(storageKey, lastCheckTime);
+                }
+
+                if (shouldReload) {
+                    // Reload after 3 seconds if notification shown, or immediately if just status update
+                    const delay = data.new_ads_count > 0 ? 3000 : 500;
+                    setTimeout(() => {
+                        console.log('Reloading page...');
+                        location.reload();
+                    }, delay);
+                }
+
+            } catch (err) {
+                console.error('Error checking for new ads:', err);
+            }
+        }
+        
+        function showNewAdsNotification(count) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 glass-card p-4 rounded-2xl shadow-2xl border border-indigo-500 animate-bounce';
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 rounded-full p-2">
+                        <i class="bi bi-bell-fill text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-white">${count} nouvelle${count > 1 ? 's' : ''} annonce${count > 1 ? 's' : ''} !</p>
+                        <p class="text-sm text-slate-300">Rechargement dans 3s...</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        // Check for new ads every 10 seconds (scan runs every 3-5 mins)
+        if (window.location.search.includes('action=dashboard') || (!window.location.search.includes('action='))) {
+            setInterval(checkForNewAds, 10000); 
+        }
+
+        async function triggerManualScan() {
+            const btn = document.getElementById('refreshBtn');
+            const icon = btn.querySelector('i');
+            const text = btn.querySelector('span');
+            
+            // Loading state
+            btn.disabled = true;
+            icon.classList.add('animate-spin');
+            text.innerText = 'Scan en cours...';
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            try {
+                const res = await fetch('index.php?action=run_scan');
+                const data = await res.json();
+                
+                if (data.success) {
+                    text.innerText = 'Succès !';
+                    icon.classList.remove('bi-arrow-clockwise', 'animate-spin');
+                    icon.classList.add('bi-check-lg', 'text-green-400');
+                    
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('Erreur: ' + data.message);
+                    resetBtn();
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erreur lors du scan.');
+                resetBtn();
+            }
+            
+            function resetBtn() {
+                btn.disabled = false;
+                icon.classList.remove('animate-spin', 'bi-check-lg', 'text-green-400');
+                icon.classList.add('bi-arrow-clockwise');
+                text.innerText = 'Actualiser';
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+    
+    
+    </script>
+</body>
+</html>
