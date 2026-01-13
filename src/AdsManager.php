@@ -100,8 +100,8 @@ class AdsManager {
 
     public function addSearch($name, $zipcodes, $price_min, $price_max, $keywords, $category = '9', $is_donation = 0, $excluded_categories = null) {
         $stmt = $this->db->prepare("
-            INSERT INTO searches (name, zipcodes, price_min, price_max, keywords, category, is_donation, excluded_categories) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO searches (name, zipcodes, price_min, price_max, keywords, category, is_donation, excluded_categories, is_active) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         ");
         return $stmt->execute([$name, $zipcodes, $price_min, $price_max, $keywords, $category, $is_donation, $excluded_categories]);
     }
@@ -113,6 +113,11 @@ class AdsManager {
             WHERE id = ?
         ");
         return $stmt->execute([$name, $zipcodes, $price_min, $price_max, $keywords, $category, $is_donation, $excluded_categories, $id]);
+    }
+
+    public function toggleSearchStatus($id) {
+        $stmt = $this->db->prepare("UPDATE searches SET is_active = NOT is_active WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
     public function deleteSearch($id) {

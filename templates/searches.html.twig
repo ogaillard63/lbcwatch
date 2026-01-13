@@ -16,9 +16,14 @@
         </thead>
         <tbody class="divide-y divide-slate-800">
             {% for search in searches %}
-            <tr class="hover:bg-slate-800/30 transition-all">
+            <tr class="hover:bg-slate-800/30 transition-all {{ not search.is_active ? 'opacity-50 grayscale' : '' }}">
                 <td class="p-6">
-                    <div class="font-bold text-lg">{{ search.name }}</div>
+                    <div class="font-bold text-lg flex items-center gap-2">
+                        {{ search.name }}
+                        {% if not search.is_active %}
+                        <span class="text-[10px] bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Désactivé</span>
+                        {% endif %}
+                    </div>
                     <div class="text-slate-500 text-sm">
                         Cat : {{ flatCategories[search.category] ?? search.category }}
                     </div>
@@ -51,6 +56,9 @@
                 </td>
                 <td class="p-6">
                     <div class="flex space-x-3">
+                        <a href="index.php?action=toggle_search&id={{ search.id }}" class="{{ search.is_active ? 'text-yellow-400 hover:bg-yellow-500/10' : 'text-green-400 hover:bg-green-500/10' }} p-2 rounded-lg transition-all" title="{{ search.is_active ? 'Désactiver' : 'Activer' }}">
+                            <i class="bi bi-{{ search.is_active ? 'pause-fill' : 'play-fill' }}"></i>
+                        </a>
                         <a href="{{ search.leboncoin_url }}" target="_blank" class="text-green-400 hover:bg-green-500/10 p-2 rounded-lg transition-all" title="Tester sur Leboncoin">
                             <i class="bi bi-box-arrow-up-right"></i>
                         </a>

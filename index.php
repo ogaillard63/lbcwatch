@@ -118,6 +118,12 @@ if ($action === 'delete_search' && isset($_GET['id'])) {
     exit;
 }
 
+if ($action === 'toggle_search' && isset($_GET['id'])) {
+    $adsManager->toggleSearchStatus($_GET['id']);
+    header('Location: index.php?action=searches');
+    exit;
+}
+
 if ($action === 'toggle_favorite' && isset($_GET['id'])) {
     $adsManager->toggleFavorite($_GET['id']);
     echo json_encode(['success' => true]);
