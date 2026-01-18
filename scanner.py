@@ -162,14 +162,14 @@ def fetch_lbc_ads(client, search):
     
     is_donation = search.get('is_donation') and str(search['is_donation']) in ['1', 'True', 'true']
     if is_donation:
-        payload["filters"]["enums"] = {"donation": ["1"]}
+        payload["filters"]["enums"]["donation"] = ["1"]
     else:
         if search['price_min']:
-            payload["filters"]["price"] = payload["filters"].get("price", {})
-            payload["filters"]["price"]["min"] = int(search['price_min'])
+            payload["filters"]["ranges"]["price"] = payload["filters"]["ranges"].get("price", {})
+            payload["filters"]["ranges"]["price"]["min"] = int(search['price_min'])
         if search['price_max']:
-            payload["filters"]["price"] = payload["filters"].get("price", {})
-            payload["filters"]["price"]["max"] = int(search['price_max'])
+            payload["filters"]["ranges"]["price"] = payload["filters"]["ranges"].get("price", {})
+            payload["filters"]["ranges"]["price"]["max"] = int(search['price_max'])
     
     if search['keywords']:
         payload["filters"]["keywords"] = {"text": search['keywords']}
@@ -294,9 +294,16 @@ if __name__ == "__main__":
             # --- 2. Vérification Automatique (Cycle variable & Pause nuit) ---
             should_scan_auto = False
             
-            # Gestion de la pause nocturne (00h - 07h)
+            # Gestion de la pause nocturne paramétrable
+            pause_start = int(os.getenv('NIGHT_PAUSE_START', 0))
+            pause_end = int(os.getenv('NIGHT_PAUSE_END', 7))
+            
             now_dt = datetime.now()
-            is_night_pause = (0 <= now_dt.hour < 7)
+            
+            if pause_start < pause_end:
+                is_night_pause = (pause_start <= now_dt.hour < pause_end)
+            else: # Cas où la pause traverse minuit (ex: 22h à 06h)
+                is_night_pause = (now_dt.hour >= pause_start or now_dt.hour < pause_end)
 
             if not is_night_pause and (current_time - last_auto_scan) > next_interval:
                 should_scan_auto = True
